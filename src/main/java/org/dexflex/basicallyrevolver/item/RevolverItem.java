@@ -4,9 +4,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
@@ -17,6 +20,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import org.dexflex.basicallyrevolver.particle.ModParticles;
+import org.dexflex.basicallyrevolver.sound.ModSounds;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -101,8 +106,20 @@ public class RevolverItem extends Item {
             if (entityHit != null) {
                 hitPos = entityHit.getPos();
                 Entity target = entityHit.getEntity();
-                if (target instanceof LivingEntity) {
-                    target.damage(DamageSource.player(user), 4.0F);
+
+                // Copied logic from working version
+                if (target instanceof EnderPearlEntity pearl) {
+                    Entity owner = pearl.getOwner();
+                    if (owner instanceof ServerPlayerEntity player) {
+                        player.teleport(pearl.getX(), pearl.getY(), pearl.getZ());
+                        player.fallDistance = 0.0F;
+                        pearl.discard();
+                        world.playSound(null, pearl.getX(), pearl.getY(), pearl.getZ(),
+                                SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS,
+                                1.0F, 1.0F);
+                    }
+                } else if (target instanceof LivingEntity living) {
+                    living.damage(DamageSource.player(user), 4.0F);
                 }
             } else if (blockHit.getType() == HitResult.Type.BLOCK) {
                 hitPos = blockHit.getPos();
@@ -119,30 +136,39 @@ public class RevolverItem extends Item {
                 }
                 serverWorld.spawnParticles(ModParticles.REVOLVER_HIT, hitPos.x, hitPos.y, hitPos.z, 1, 0, 0, 0, 0);
             }
-            world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_CROSSBOW_SHOOT, user.getSoundCategory(), 1.0F, 1.1F);
+
+            world.playSound(null, user.getBlockPos(), ModSounds.REVOLVER_SHOOT, user.getSoundCategory(), 0.25F, 1.0f);
+            user.getItemCooldownManager().set(this, 10);
         }
-        user.getItemCooldownManager().set(this, 10);
     }
+
 
     /**
      * Returns the first eligible entity within the line, or null.
      * Closely follows vanilla's ProjectileUtil.getEntityCollision.
      */
-    private EntityHitResult raycastEntities(PlayerEntity user, Vec3d start, Vec3d end, Box box) {
-        World world = user.world;
-        EntityHitResult closest = null;
-        double closestSq = Double.MAX_VALUE;
-        for (Entity entity : world.getOtherEntities(user, box, e -> e instanceof LivingEntity && e.isAlive() && e.collides())) {
-            Box entityBox = entity.getBoundingBox().expand(0.3);
-            Optional<Vec3d> opt = entityBox.raycast(start, end);
-            if (opt.isPresent()) {
-                double distSq = start.squaredDistanceTo(opt.get());
-                if (distSq < closestSq) {
-                    closestSq = distSq;
-                    closest = new EntityHitResult(entity, opt.get());
+    @Nullable
+    private EntityHitResult raycastEntities(Entity user, Vec3d start, Vec3d end, Box box) {
+        World world = user.getWorld();
+        double closestDistance = Double.MAX_VALUE;
+        EntityHitResult closestHit = null;
+
+        for (Entity entity : world.getOtherEntities(user, box)) {
+            // Expand bounding box slightly to help hit small/projectile entities like EnderPearlEntity
+            Box expandedBox = entity.getBoundingBox().expand(0.3);
+            Optional<Vec3d> optionalHit = expandedBox.raycast(start, end);
+
+            if (optionalHit.isPresent()) {
+                double distance = start.squaredDistanceTo(optionalHit.get());
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestHit = new EntityHitResult(entity, optionalHit.get());
                 }
             }
         }
-        return closest;
+
+        return closestHit;
     }
+
+
 }

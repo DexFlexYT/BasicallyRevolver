@@ -1,24 +1,9 @@
 {
-    "marksman.shoot": {
+    "revolver.shoot": {
       "sounds": [
-        "basicallyrevolver:marksman/shoot1",
-        "basicallyrevolver:marksman/shoot2",
-        "basicallyrevolver:marksman/shoot3"
-        ]
-      },
-      "marksman.coinflip": {
-        "sounds": [
-          "basicallyrevolver:marksman/coinflip"
-        ]
-      },
-      "marksman.coinspin": {
-        "sounds": [
-          "basicallyrevolver:marksman/coinspin"
-        ]
-      },
-      "marksman.coinflashloop": {
-        "sounds": [
-          "basicallyrevolver:marksman/coinflashloop"
+        "basicallyrevolver:revolver/shoot1",
+        "basicallyrevolver:revolver/shoot2",
+        "basicallyrevolver:revolver/shoot3"
         ]
       }
 }
