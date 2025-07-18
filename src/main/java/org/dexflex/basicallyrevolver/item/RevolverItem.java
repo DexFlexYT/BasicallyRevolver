@@ -18,22 +18,67 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import org.dexflex.basicallyrevolver.particle.ModParticles;
 
-import java.util.Optional;
+import java.util.*;
 
 public class RevolverItem extends Item {
-    public RevolverItem(Settings settings) {
+    private static final Map<UUID, Integer> lastUseTick = new HashMap<>();
+    private static final Map<UUID, Boolean> isUsing = new HashMap<>();
 
+    private static final Set<UUID> usingPlayers = new HashSet<>();
+    public RevolverItem(Settings settings) {
         super(settings);
     }
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        if (!world.isClient && !user.isUsingItem()) {
+        if (!world.isClient) {
+            UUID id = user.getUuid();
+            if (!usingPlayers.contains(id) && !user.getItemCooldownManager().isCoolingDown(this)) {
+                fireRevolver(world, user, user.getStackInHand(hand));
+                user.getItemCooldownManager().set(this, 10);
+            }
+            usingPlayers.add(id);
+        }
+
+        user.setCurrentHand(hand); // needed to trigger onStoppedUsing
+        return TypedActionResult.consume(user.getStackInHand(hand));
+    }
+
+    @Override
+    public void onStoppedUsing(ItemStack stack, World world, LivingEntity entity, int remainingUseTicks) {
+        if (!world.isClient && entity instanceof PlayerEntity player) {
+            usingPlayers.remove(player.getUuid());
+        }
+    }
+
+    @Override
+    public int getMaxUseTime(ItemStack stack) {
+        return 72000; // long use duration so it can be held
+    }
+
+
+
+
+    @Override
+    public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
+        if (entity instanceof PlayerEntity player) {
+            UUID playerId = player.getUuid();
+            Integer lastTick = lastUseTick.get(playerId);
+
+            if (lastTick != null && player.age - lastTick > 5) {
+                System.out.println("DEBUG: Clearing usage flag after " + (player.age - lastTick) + " ticks");
+                isUsing.remove(playerId);
+                lastUseTick.remove(playerId);
+            }
+        }
+    }
+
+    private void fireRevolver(World world, PlayerEntity user, ItemStack stack) {
+        if (!world.isClient) {
             double maxDistance = 128.0D;
             Vec3d start = user.getCameraPosVec(1.0f);
             Vec3d direction = user.getRotationVec(1.0f);
             Vec3d end = start.add(direction.multiply(maxDistance));
-            user.getMainHandStack().getOrCreateNbt().putBoolean("justShot", true);
 
             HitResult blockHit = world.raycast(new RaycastContext(
                     start,
@@ -77,14 +122,7 @@ public class RevolverItem extends Item {
             world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_CROSSBOW_SHOOT, user.getSoundCategory(), 1.0F, 1.1F);
         }
         user.getItemCooldownManager().set(this, 10);
-        return TypedActionResult.success(user.getStackInHand(hand));
     }
-
-    @Override
-    public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
-
-    }
-
 
     /**
      * Returns the first eligible entity within the line, or null.
