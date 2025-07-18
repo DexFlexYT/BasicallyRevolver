@@ -4,9 +4,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -30,9 +32,12 @@ public class RevolverItem extends Item {
     private static final Map<UUID, Boolean> isUsing = new HashMap<>();
 
     private static final Set<UUID> usingPlayers = new HashSet<>();
+
+
     public RevolverItem(Settings settings) {
         super(settings);
     }
+
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
@@ -46,7 +51,7 @@ public class RevolverItem extends Item {
         }
 
         user.setCurrentHand(hand); // needed to trigger onStoppedUsing
-        return TypedActionResult.consume(user.getStackInHand(hand));
+        return TypedActionResult.pass(user.getStackInHand(hand));
     }
 
     @Override
@@ -55,14 +60,6 @@ public class RevolverItem extends Item {
             usingPlayers.remove(player.getUuid());
         }
     }
-
-    @Override
-    public int getMaxUseTime(ItemStack stack) {
-        return 72000; // long use duration so it can be held
-    }
-
-
-
 
     @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
@@ -107,7 +104,6 @@ public class RevolverItem extends Item {
                 hitPos = entityHit.getPos();
                 Entity target = entityHit.getEntity();
 
-                // Copied logic from working version
                 if (target instanceof EnderPearlEntity pearl) {
                     Entity owner = pearl.getOwner();
                     if (owner instanceof ServerPlayerEntity player) {
@@ -118,13 +114,18 @@ public class RevolverItem extends Item {
                                 SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS,
                                 1.0F, 1.0F);
                     }
+                }
+                else if (target instanceof FireworkRocketEntity firework) {
+                    NbtCompound nbt = new NbtCompound();
+                    firework.writeNbt(nbt);
+                    nbt.putInt("Life", 1000);
+                    firework.readNbt(nbt);
                 } else if (target instanceof LivingEntity living) {
                     living.damage(DamageSource.player(user), 4.0F);
                 }
             } else if (blockHit.getType() == HitResult.Type.BLOCK) {
                 hitPos = blockHit.getPos();
             }
-
             if (world instanceof ServerWorld serverWorld) {
                 Vec3d trailVec = hitPos.subtract(start);
                 double len = trailVec.length();
@@ -154,7 +155,6 @@ public class RevolverItem extends Item {
         EntityHitResult closestHit = null;
 
         for (Entity entity : world.getOtherEntities(user, box)) {
-            // Expand bounding box slightly to help hit small/projectile entities like EnderPearlEntity
             Box expandedBox = entity.getBoundingBox().expand(0.3);
             Optional<Vec3d> optionalHit = expandedBox.raycast(start, end);
 
@@ -169,6 +169,5 @@ public class RevolverItem extends Item {
 
         return closestHit;
     }
-
 
 }
