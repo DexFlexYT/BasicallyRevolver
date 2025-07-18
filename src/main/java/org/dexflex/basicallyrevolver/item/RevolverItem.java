@@ -155,9 +155,16 @@ public class RevolverItem extends Item {
         EntityHitResult closestHit = null;
 
         for (Entity entity : world.getOtherEntities(user, box)) {
-            Box expandedBox = entity.getBoundingBox().expand(0.3);
-            Optional<Vec3d> optionalHit = expandedBox.raycast(start, end);
+            Box entityBox = entity.getBoundingBox();
 
+            // Expand hitbox for small projectiles
+            if (entity instanceof EnderPearlEntity || entity instanceof FireworkRocketEntity) {
+                entityBox = entityBox.expand(0.7); // Larger than default 0.3
+            } else {
+                entityBox = entityBox.expand(0.1); // Slight buffer for normal entities
+            }
+
+            Optional<Vec3d> optionalHit = entityBox.raycast(start, end);
             if (optionalHit.isPresent()) {
                 double distance = start.squaredDistanceTo(optionalHit.get());
                 if (distance < closestDistance) {
@@ -169,5 +176,6 @@ public class RevolverItem extends Item {
 
         return closestHit;
     }
+
 
 }
