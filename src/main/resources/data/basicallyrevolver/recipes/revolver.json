@@ -1,0 +1,29 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "  #",
+        "nIF",
+        "L  "
+    ],
+    "key": {
+        "#": {
+            "item": "minecraft:iron_nugget"
+        },
+        "n": {
+            "item": "minecraft:netherite_ingot"
+        },
+        "I": {
+            "item": "minecraft:iron_block"
+        },
+        "F": {
+            "item": "minecraft:fire_charge"
+        },
+        "L": {
+            "item": "minecraft:leather"
+        }
+    },
+    "result": {
+        "item": "basicallyrevolver:revolver",
+        "count": 1
+    }
+}

@@ -3,9 +3,9 @@
 	"id": "basicallyrevolver",
 	"version": "${version}",
 	"name": "BasicallyRevolver",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "adds a revolver item",
 	"authors": [
-		"Me!"
+		"DexFlex_YT"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
@@ -30,7 +30,7 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.16.14",
+		"fabricloader": ">=0.16.10",
 		"minecraft": "~1.19",
 		"java": ">=17",
 		"fabric": "*"
