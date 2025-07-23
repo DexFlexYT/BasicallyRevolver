@@ -5,6 +5,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -24,6 +25,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import org.dexflex.basicallyrevolver.BasicallyRevolver;
 import org.dexflex.basicallyrevolver.particle.ModParticles;
 import org.dexflex.basicallyrevolver.sound.ModSounds;
 import org.jetbrains.annotations.Nullable;
@@ -33,8 +35,8 @@ import java.util.*;
 public class RevolverItem extends Item {
     private static final Map<UUID, Integer> lastUseTick = new HashMap<>();
     private static final Map<UUID, Boolean> isUsing = new HashMap<>();
-
     private static final Set<UUID> usingPlayers = new HashSet<>();
+
 
 
     public RevolverItem(Settings settings) {
@@ -135,12 +137,60 @@ public class RevolverItem extends Item {
                     firework.writeNbt(nbt);
                     nbt.putInt("Life", 1000);
                     firework.readNbt(nbt);
-                } else if (target instanceof LivingEntity living) {
+                    if (world instanceof ServerWorld serverWorld) {
+                        serverWorld.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, firework.getX(), firework.getY(), firework.getZ(), 50, .0, .0, .0, 0.05);
+                    }
+                }
+                else if (target instanceof TridentEntity trident) {
+                    trident.setNoGravity(true);
+
+                    Vec3d bulletDirection = direction.normalize();
+                    Vec3d tridentPos = trident.getPos();
+
+                    List<PlayerEntity> players = ((ServerWorld) world).getEntitiesByClass(
+                            PlayerEntity.class,
+                            new Box(tridentPos.add(bulletDirection.multiply(2)).subtract(5,5,5), tridentPos.add(bulletDirection.multiply(32)).add(5,5,5)),
+                            p -> {
+                                Vec3d toPlayer = p.getPos().subtract(tridentPos).normalize();
+                                return bulletDirection.dotProduct(toPlayer) > 0.7; // ~45 degrees cone
+                            }
+                    );
+
+                    Vec3d newVel;
+                    if (!players.isEmpty()) {
+                        PlayerEntity nearest = players.stream()
+                                .min(Comparator.comparingDouble(p -> p.squaredDistanceTo(tridentPos)))
+                                .orElse(players.get(0));
+                        newVel = new Vec3d(nearest.getX(), nearest.getEyeY(), nearest.getZ())
+                                .subtract(tridentPos).normalize()
+                                .multiply(5.5);
+                    } else {
+                        newVel = bulletDirection.multiply(1.5);
+                    }
+                    trident.setVelocity(newVel);
+                    trident.velocityModified = true;
+                    BasicallyRevolver.homingTridents.put(trident.getUuid(), 0);
+
+
+                    world.playSound(null, trident.getX(), trident.getY(), trident.getZ(),
+                            SoundEvents.ITEM_TRIDENT_HIT, SoundCategory.PLAYERS, 2f, 1f);
+                    world.playSound(null, trident.getX(), trident.getY(), trident.getZ(),
+                            SoundEvents.ITEM_TRIDENT_RETURN, SoundCategory.PLAYERS, 2f, 1f);
+                    if (world instanceof ServerWorld serverWorld) {
+                        serverWorld.spawnParticles(ParticleTypes.SCRAPE, trident.getX(), trident.getY(), trident.getZ(),
+                                20, 0.1, 0.1, 0.1, 0.05);
+                    }
+                }
+
+                else if (target instanceof LivingEntity living) {
                     living.damage(DamageSource.player(user), 4.0F);
                 }
-            } else if (blockHit.getType() == HitResult.Type.BLOCK) {
+
+            }
+            else if (blockHit.getType() == HitResult.Type.BLOCK) {
                 hitPos = blockHit.getPos();
             }
+
             if (world instanceof ServerWorld serverWorld) {
                 Vec3d trailVec = hitPos.subtract(start);
                 double len = trailVec.length();
@@ -159,10 +209,6 @@ public class RevolverItem extends Item {
     }
 
 
-    /**
-     * Returns the first eligible entity within the line, or null.
-     * Closely follows vanilla's ProjectileUtil.getEntityCollision.
-     */
     @Nullable
     private EntityHitResult raycastEntities(Entity user, Vec3d start, Vec3d end, Box box) {
         World world = user.getWorld();
@@ -174,7 +220,7 @@ public class RevolverItem extends Item {
             double sqDist = camPos.squaredDistanceTo(entity.getPos());
             double dist = Math.sqrt(sqDist);
 
-            double scaleFactor = 1.0 + (dist / 8); // increase by 1 per 32 blocks
+            double scaleFactor = 1.0 + (dist / 8);
             double expand = entity instanceof EnderPearlEntity || entity instanceof FireworkRocketEntity
                     ? 0.2 * scaleFactor
                     : 0.1 * scaleFactor;
@@ -192,7 +238,4 @@ public class RevolverItem extends Item {
 
         return closestHit;
     }
-
-
-
 }
