@@ -30,7 +30,7 @@ public class TridentItemMixin {
         if (!(user instanceof PlayerEntity player) || world.isClient) return;
 
         int useTicks = ((TridentItem)(Object)this).getMaxUseTime(stack) - remainingUseTicks;
-        float pull = MathHelper.clamp(useTicks / 10f, .1f, 1f);
+        float pull = MathHelper.clamp(useTicks / 10f, .0f, 1f);
 
         if (pull <= 0f) {
             ci.cancel();
