@@ -3,7 +3,8 @@
 	"package": "org.dexflex.basicallyrevolver.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"TridentItemMixin"
+		"TridentItemMixin",
+		"TridentEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

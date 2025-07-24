@@ -9,9 +9,10 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.dexflex.basicallyrevolver.BasicallyRevolver;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -29,7 +30,7 @@ public class TridentItemMixin {
         if (!(user instanceof PlayerEntity player) || world.isClient) return;
 
         int useTicks = ((TridentItem)(Object)this).getMaxUseTime(stack) - remainingUseTicks;
-        float pull = MathHelper.clamp(useTicks / 10f, .0f, 1f);
+        float pull = MathHelper.clamp(useTicks / 30f, .0f, 1f);
 
         if (pull <= 0f) {
             ci.cancel();
@@ -38,7 +39,11 @@ public class TridentItemMixin {
 
         TridentEntity tridentEntity = new TridentEntity(world, player, stack);
         tridentEntity.setVelocity(player, player.getPitch(), player.getYaw(), 0.0F, (2.5F) * pull, 1.0F);
+        Vec3d playerVelocity = BasicallyRevolver.realVelocity.getOrDefault(player.getUuid(), Vec3d.ZERO);
 
+        Vec3d tridentVel = tridentEntity.getVelocity();
+        Vec3d combinedVel = tridentVel.add(playerVelocity);
+        tridentEntity.setVelocity(combinedVel);
 
         NbtCompound nbt = new NbtCompound();
         nbt.putBoolean("ShotWithRevolver", true);
@@ -53,9 +58,5 @@ public class TridentItemMixin {
             player.getInventory().removeOne(stack);
         }
         ci.cancel();
-    }
-
-    private void redirectUse(PlayerEntity player, Hand hand) {
-        player.setCurrentHand(hand);
     }
 }

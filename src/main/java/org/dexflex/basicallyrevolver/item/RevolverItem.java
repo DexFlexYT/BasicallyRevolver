@@ -155,10 +155,10 @@ public class RevolverItem extends Item {
 
 
                         // Launch pearl away from firework, velocity multiplier controls speed
-                        double launchSpeed = 1.5; // tweak as desired
+                        double launchSpeed = 3; // tweak as desired
                         Vec3d launchVelocity = dir.multiply(launchSpeed);
 
-                        pearl.setVelocity(launchVelocity.x, launchVelocity.y , launchVelocity.z); // add slight vertical boost
+                        pearl.setVelocity(launchVelocity.x, launchVelocity.y , launchVelocity.z);
 
                         // Optional: reset fall distance to avoid instant damage after jump
                         Entity owner = pearl.getOwner();
@@ -196,9 +196,9 @@ public class RevolverItem extends Item {
                                 .orElse(players.get(0));
                         newVel = new Vec3d(nearest.getX(), nearest.getEyeY(), nearest.getZ())
                                 .subtract(tridentPos).normalize()
-                                .multiply(5.5);
+                                .multiply(5.0);
                     } else {
-                        newVel = bulletDirection.multiply(2.5);
+                        newVel = bulletDirection.multiply(5.0);
                     }
                     trident.setVelocity(newVel);
                     trident.velocityModified = true;

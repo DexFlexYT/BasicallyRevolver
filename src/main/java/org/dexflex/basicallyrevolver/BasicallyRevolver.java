@@ -58,7 +58,7 @@ public class BasicallyRevolver implements ModInitializer {
 						}
 
 						int age = homingTridents.get(id);
-						if (age > 20) {
+						if (age > 5) {
 							trident.setNoGravity(false);
 							homingTridents.remove(id);
 							continue;
@@ -74,10 +74,6 @@ public class BasicallyRevolver implements ModInitializer {
 					if (entity instanceof EnderPearlEntity pearl) {
 						UUID id = pearl.getUuid();
 						if (BasicallyRevolver.boostedPearls.contains(id)) {
-							String particleCmd = String.format(
-									"particle minecraft:glow_squid_ink %.4f %.4f %.4f 0 0 0 0 1 force @a",
-									pearl.getX(), pearl.getY(), pearl.getZ()
-							);
 							server.getCommandManager().executeWithPrefix(server.getCommandSource().withSilent(), "particle minecraft:glow_squid_ink "+ pearl.getX() +" "+pearl.getY() +" "+pearl.getZ() + " 0 0 0 0 1 force @a");
 							server.getCommandManager().executeWithPrefix(server.getCommandSource().withSilent(), "particle minecraft:portal "+ pearl.getX() +" "+pearl.getY() +" "+pearl.getZ() + " 0.1 0.1 0.1 0 5 force @a");
 							if (pearl.isOnGround() || pearl.isRemoved()) {
@@ -109,7 +105,7 @@ public class BasicallyRevolver implements ModInitializer {
 					.min(Comparator.comparingDouble(p -> p.squaredDistanceTo(pos)))
 					.orElse(players.get(0));
 			Vec3d aimDir = new Vec3d(nearest.getX(), nearest.getEyeY(), nearest.getZ()).subtract(pos).normalize();
-			Vec3d newVel = aimDir.multiply(2.5);
+			Vec3d newVel = aimDir.multiply(5);
 			trident.setVelocity(newVel);
 			trident.velocityModified = true;
 		}
