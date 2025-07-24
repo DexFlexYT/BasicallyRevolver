@@ -20,7 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(TridentItem.class)
 public class TridentItemMixin {
 
-
     @Inject(
             method = "onStoppedUsing(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/LivingEntity;I)V",
             at = @At("HEAD"),
@@ -49,6 +48,10 @@ public class TridentItemMixin {
         world.spawnEntity(tridentEntity);
         world.playSoundFromEntity(null, tridentEntity, SoundEvents.ITEM_TRIDENT_THROW, SoundCategory.PLAYERS, 1.0F, 1.0F);
         player.incrementStat(Stats.USED.getOrCreateStat((TridentItem)(Object)this));
+        stack.decrement(1);
+        if (stack.isEmpty()) {
+            player.getInventory().removeOne(stack);
+        }
         ci.cancel();
     }
 

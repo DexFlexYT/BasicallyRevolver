@@ -39,6 +39,7 @@ public class RevolverItem extends Item {
 
 
 
+
     public RevolverItem(Settings settings) {
         super(settings);
     }
@@ -133,6 +134,38 @@ public class RevolverItem extends Item {
                     }
                 }
                 else if (target instanceof FireworkRocketEntity firework) {
+                    Vec3d fireworkPos = firework.getPos();
+
+                    if (world instanceof ServerWorld serverWorld) {
+                        serverWorld.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, fireworkPos.x, fireworkPos.y, fireworkPos.z, 50, 0, 0, 0, 0.05);
+                    }
+
+                    List<EnderPearlEntity> nearbyPearls = world.getEntitiesByClass(
+                            EnderPearlEntity.class,
+                            new Box(fireworkPos.x - 5, fireworkPos.y - 5, fireworkPos.z - 5,
+                                    fireworkPos.x + 5, fireworkPos.y + 5, fireworkPos.z + 5),
+                            e -> true
+                    );
+
+                    for (EnderPearlEntity pearl : nearbyPearls) {
+                        Vec3d dir = pearl.getPos().subtract(fireworkPos).normalize();
+
+
+                        BasicallyRevolver.boostedPearls.add(pearl.getUuid());
+
+
+                        // Launch pearl away from firework, velocity multiplier controls speed
+                        double launchSpeed = 1.5; // tweak as desired
+                        Vec3d launchVelocity = dir.multiply(launchSpeed);
+
+                        pearl.setVelocity(launchVelocity.x, launchVelocity.y , launchVelocity.z); // add slight vertical boost
+
+                        // Optional: reset fall distance to avoid instant damage after jump
+                        Entity owner = pearl.getOwner();
+                        if (owner instanceof PlayerEntity player) {
+                            player.fallDistance = 0;
+                        }
+                    }
                     NbtCompound nbt = new NbtCompound();
                     firework.writeNbt(nbt);
                     nbt.putInt("Life", 1000);
@@ -152,7 +185,7 @@ public class RevolverItem extends Item {
                             new Box(tridentPos.add(bulletDirection.multiply(2)).subtract(5,5,5), tridentPos.add(bulletDirection.multiply(32)).add(5,5,5)),
                             p -> {
                                 Vec3d toPlayer = p.getPos().subtract(tridentPos).normalize();
-                                return bulletDirection.dotProduct(toPlayer) > 0.7; // ~45 degrees cone
+                                return bulletDirection.dotProduct(toPlayer) > 0.3; // ~45 degrees cone
                             }
                     );
 
@@ -165,7 +198,7 @@ public class RevolverItem extends Item {
                                 .subtract(tridentPos).normalize()
                                 .multiply(5.5);
                     } else {
-                        newVel = bulletDirection.multiply(1.5);
+                        newVel = bulletDirection.multiply(2.5);
                     }
                     trident.setVelocity(newVel);
                     trident.velocityModified = true;
