@@ -9,6 +9,7 @@ import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import org.dexflex.basicallyrevolver.item.ModItems;
 import org.dexflex.basicallyrevolver.particle.ModParticles;
@@ -24,6 +25,7 @@ public class BasicallyRevolver implements ModInitializer {
 	public static final Map<UUID, Vec3d> realVelocity = new HashMap<>();
 	public static final Map<UUID, Integer> homingTridents = new ConcurrentHashMap<>();
 	public static final Set<UUID> boostedPearls = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	private static final Set<ChunkPos> forcedChunksLastTick = new HashSet<>();
 
 	@Override
 	public void onInitialize() {
@@ -34,7 +36,13 @@ public class BasicallyRevolver implements ModInitializer {
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 
-			// Update player velocity tracking
+			for (ServerWorld world : server.getWorlds()) {
+				for (ChunkPos pos : forcedChunksLastTick) {
+					world.setChunkForced(pos.x, pos.z, false);
+				}
+			}
+			forcedChunksLastTick.clear();
+
 			for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
 				Vec3d curr = player.getPos();
 				Vec3d last = lastPos.getOrDefault(player.getUuid(), curr);
@@ -44,9 +52,13 @@ public class BasicallyRevolver implements ModInitializer {
 			}
 
 			for (ServerWorld world : server.getWorlds()) {
-				// --- Trident homing logic ---
 				for (Entity entity : world.iterateEntities()) {
 					if (entity instanceof TridentEntity trident) {
+
+						ChunkPos pos = trident.getChunkPos();
+						world.setChunkForced(pos.x, pos.z, true);
+						forcedChunksLastTick.add(pos);
+
 						UUID id = trident.getUuid();
 
 						if (!homingTridents.containsKey(id)) continue;
@@ -58,7 +70,7 @@ public class BasicallyRevolver implements ModInitializer {
 						}
 
 						int age = homingTridents.get(id);
-						if (age > 5) {
+						if (age > 2) {
 							trident.setNoGravity(false);
 							homingTridents.remove(id);
 							continue;
@@ -69,7 +81,6 @@ public class BasicallyRevolver implements ModInitializer {
 						redirectTrident(trident, world);
 					}
 				}
-				// --- EnderPearl boosted particle trail logic ---
 				for (Entity entity : world.iterateEntities()) {
 					if (entity instanceof EnderPearlEntity pearl) {
 						UUID id = pearl.getUuid();
@@ -96,7 +107,7 @@ public class BasicallyRevolver implements ModInitializer {
 				new Box(pos.add(velocityNorm.multiply(2)).subtract(5,5,5), pos.add(velocityNorm.multiply(32)).add(5,5,5)),
 				p -> {
 					Vec3d toPlayer = new Vec3d(p.getX(), p.getEyeY(), p.getZ()).subtract(pos).normalize();
-					return velocityNorm.dotProduct(toPlayer) > 0.3; // ~45 degrees cone
+					return velocityNorm.dotProduct(toPlayer) > 0.3;
 				}
 		);
 

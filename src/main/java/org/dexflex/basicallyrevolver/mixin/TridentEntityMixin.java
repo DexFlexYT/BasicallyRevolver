@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(TridentEntity.class)
 public abstract class TridentEntityMixin {
 
-    @Inject(method = "onEntityHit", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "onEntityHit", at = @At("HEAD"))
     private void applyVelocityBasedDamage(EntityHitResult entityHitResult, CallbackInfo ci) {
         TridentEntity trident = (TridentEntity)(Object)this;
         Entity target = entityHitResult.getEntity();
@@ -22,13 +22,10 @@ public abstract class TridentEntityMixin {
 
         double speed = trident.getVelocity().length();
 
-        // Calculate damage based on speed (adjust formula as needed)
-        float damage = (float) Math.min(Math.max(speed * 3, 1.0), 12.0); // example scaling, min 1, max 12
+        float damage = (float) Math.min(Math.max(speed * 2.0, 7.0), 20.0);
 
-        // Apply custom damage source or player damage source if applicable
         living.damage(DamageSource.trident(trident, trident.getOwner()), damage);
 
-        // Cancel original damage if needed to avoid double damage
-        ci.cancel();
     }
 }
+

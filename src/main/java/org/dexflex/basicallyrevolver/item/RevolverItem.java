@@ -154,13 +154,11 @@ public class RevolverItem extends Item {
                         BasicallyRevolver.boostedPearls.add(pearl.getUuid());
 
 
-                        // Launch pearl away from firework, velocity multiplier controls speed
-                        double launchSpeed = 3; // tweak as desired
+                        double launchSpeed = 3;
                         Vec3d launchVelocity = dir.multiply(launchSpeed);
 
                         pearl.setVelocity(launchVelocity.x, launchVelocity.y , launchVelocity.z);
 
-                        // Optional: reset fall distance to avoid instant damage after jump
                         Entity owner = pearl.getOwner();
                         if (owner instanceof PlayerEntity player) {
                             player.fallDistance = 0;
@@ -200,10 +198,12 @@ public class RevolverItem extends Item {
                     } else {
                         newVel = bulletDirection.multiply(5.0);
                     }
-                    trident.setVelocity(newVel);
+
+                    Vec3d currentVel = trident.getVelocity();
+                    Vec3d combinedVel = currentVel.add(newVel);
+                    trident.setVelocity(combinedVel);
                     trident.velocityModified = true;
                     BasicallyRevolver.homingTridents.put(trident.getUuid(), 0);
-
 
                     world.playSound(null, trident.getX(), trident.getY(), trident.getZ(),
                             SoundEvents.ITEM_TRIDENT_HIT, SoundCategory.PLAYERS, 2f, 1f);
@@ -212,6 +212,8 @@ public class RevolverItem extends Item {
                     if (world instanceof ServerWorld serverWorld) {
                         serverWorld.spawnParticles(ParticleTypes.SCRAPE, trident.getX(), trident.getY(), trident.getZ(),
                                 20, 0.1, 0.1, 0.1, 0.05);
+                        serverWorld.spawnParticles(ParticleTypes.FLASH, trident.getX(), trident.getY(), trident.getZ(),
+                                1, 0.0, 0.0, 0.0, 0.0);
                     }
                 }
 
