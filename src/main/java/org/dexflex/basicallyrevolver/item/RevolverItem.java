@@ -256,7 +256,7 @@ public class RevolverItem extends Item {
             double dist = Math.sqrt(sqDist);
 
             double scaleFactor = 1.0 + (dist / 8);
-            double expand = entity instanceof EnderPearlEntity || entity instanceof FireworkRocketEntity
+            double expand = entity instanceof EnderPearlEntity || entity instanceof FireworkRocketEntity  || entity instanceof TridentEntity
                     ? 0.2 * scaleFactor
                     : 0.1 * scaleFactor;
 
