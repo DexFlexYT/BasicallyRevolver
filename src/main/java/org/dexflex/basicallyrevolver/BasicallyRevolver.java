@@ -54,13 +54,11 @@ public class BasicallyRevolver implements ModInitializer {
 			for (ServerWorld world : server.getWorlds()) {
 				for (Entity entity : world.iterateEntities()) {
 					if (entity instanceof TridentEntity trident) {
-
 						ChunkPos pos = trident.getChunkPos();
 						world.setChunkForced(pos.x, pos.z, true);
 						forcedChunksLastTick.add(pos);
 
 						UUID id = trident.getUuid();
-
 						if (!homingTridents.containsKey(id)) continue;
 
 						if (trident.isOnGround() || trident.collidedSoftly) {
@@ -80,13 +78,17 @@ public class BasicallyRevolver implements ModInitializer {
 						trident.setNoGravity(true);
 						redirectTrident(trident, world);
 					}
-				}
-				for (Entity entity : world.iterateEntities()) {
 					if (entity instanceof EnderPearlEntity pearl) {
+						ChunkPos pos = pearl.getChunkPos();
+						world.setChunkForced(pos.x, pos.z, true);
+						forcedChunksLastTick.add(pos);
+
 						UUID id = pearl.getUuid();
 						if (BasicallyRevolver.boostedPearls.contains(id)) {
-							server.getCommandManager().executeWithPrefix(server.getCommandSource().withSilent(), "particle minecraft:glow_squid_ink "+ pearl.getX() +" "+pearl.getY() +" "+pearl.getZ() + " 0 0 0 0 1 force @a");
-							server.getCommandManager().executeWithPrefix(server.getCommandSource().withSilent(), "particle minecraft:portal "+ pearl.getX() +" "+pearl.getY() +" "+pearl.getZ() + " 0.1 0.1 0.1 0 5 force @a");
+							server.getCommandManager().executeWithPrefix(server.getCommandSource().withSilent(),
+									"particle minecraft:glow_squid_ink " + pearl.getX() + " " + pearl.getY() + " " + pearl.getZ() + " 0 0 0 0 1 force @a");
+							server.getCommandManager().executeWithPrefix(server.getCommandSource().withSilent(),
+									"particle minecraft:portal " + pearl.getX() + " " + pearl.getY() + " " + pearl.getZ() + " 0.1 0.1 0.1 0 5 force @a");
 							if (pearl.isOnGround() || pearl.isRemoved()) {
 								BasicallyRevolver.boostedPearls.remove(id);
 							}
